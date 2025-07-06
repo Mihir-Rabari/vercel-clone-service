@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api-server:
+    build:
+      context: ./api-server-go
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - REDIS_URL=redis:6379
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - ECS_CLUSTER=${ECS_CLUSTER}
+      - ECS_TASK_DEFINITION=${ECS_TASK_DEFINITION}
+      - ECS_SUBNETS=${ECS_SUBNETS}
+      - ECS_SECURITY_GROUPS=${ECS_SECURITY_GROUPS}
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Note: build-server typically runs as ECS tasks, not as a persistent service
+  # Uncomment the following if you want to run it locally for testing
+  # build-server:
+  #   build:
+  #     context: ./build-server-go
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - PROJECT_ID=${PROJECT_ID}
+  #     - REDIS_URL=redis:6379
+  #     - AWS_REGION=${AWS_REGION}
+  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  #     - S3_BUCKET=${S3_BUCKET}
+  #   depends_on:
+  #     - redis
+  #   volumes:
+  #     - ./output:/root/output  # Mount your project output directory
+
+volumes:
+  redis_data:
